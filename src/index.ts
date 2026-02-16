@@ -445,7 +445,8 @@ const plugin = {
           try { await requireRepo(cwd); } catch (e: any) { return err(e.message); }
 
           const action = (params.action as string) ?? "push";
-          const idx = (params.index as number) ?? 0;
+          const rawIdx = (params.index as number) ?? 0;
+          const idx = Math.max(0, Math.floor(rawIdx));
 
           if (action === "list") {
             const result = await runGit(["stash", "list"], cwd);
@@ -650,7 +651,8 @@ const plugin = {
           .action(async (opts: any) => {
             const cwd = process.cwd();
             if (!(await isGitRepo(cwd))) { console.log("not a git repo"); return; }
-            const result = await runGit(["log", `-${opts.count}`, "--oneline"], cwd);
+            const count = Math.max(1, Math.min(200, parseInt(opts.count) || 20));
+            const result = await runGit(["log", `-${count}`, "--oneline"], cwd);
             if (result.exitCode !== 0) {
               console.log(result.stderr.includes("does not have any commits") ? "no commits yet" : result.stderr);
               return;
