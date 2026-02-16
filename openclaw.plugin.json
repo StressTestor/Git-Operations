@@ -1,0 +1,36 @@
+{
+  "id": "git-operations",
+  "kind": "tools",
+  "name": "Git Operations",
+  "description": "safe git workflow tools for openclaw agents. branch, commit, push, PR — without the foot-guns. validates inputs, blocks force-push to protected branches, sanitizes everything.",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "allowForcePush": {
+        "type": "boolean",
+        "default": false,
+        "description": "Allow force-push (still blocked on protected branches)"
+      },
+      "allowMainCommit": {
+        "type": "boolean",
+        "default": false,
+        "description": "Allow direct commits to main/master"
+      },
+      "defaultRemote": {
+        "type": "string",
+        "default": "origin"
+      },
+      "commitPrefix": {
+        "type": "string",
+        "default": "",
+        "description": "Optional prefix prepended to all commit messages"
+      },
+      "protectedBranches": {
+        "type": "array",
+        "items": { "type": "string" },
+        "default": ["main", "master"],
+        "description": "Branches that can't be force-pushed or deleted"
+      }
+    }
+  }
+}

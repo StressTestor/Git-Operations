@@ -1,0 +1,33 @@
+{
+  "name": "git-operations",
+  "version": "1.0.0",
+  "description": "safe git workflow tools for openclaw agents. branch, commit, push, PR — without the foot-guns.",
+  "type": "module",
+  "main": "src/index.ts",
+  "openclaw": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.48"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.1.26"
+  },
+  "keywords": [
+    "openclaw",
+    "plugin",
+    "git",
+    "version-control",
+    "workflow"
+  ],
+  "license": "MIT"
+}
