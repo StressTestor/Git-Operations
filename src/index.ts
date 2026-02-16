@@ -9,12 +9,13 @@ import {
   runGit, isGitRepo, getCurrentBranch, truncateOutput, filterBinaryDiffs,
   validateBranchName, validateFilePath, validateRef, validateRemoteName, validateLogFilter, validateLabel,
   MAX_DIFF_LINES, MAX_LOG_ENTRIES,
+  type GitResult,
 } from "./git.js";
 
 let cfg: GitOpsConfig;
 
 function text(s: string) {
-  return { content: [{ type: "text" as const, text: s }] };
+  return { content: [{ type: "text" as const, text: s }], details: {} };
 }
 
 function err(s: string) {
@@ -604,8 +605,8 @@ const plugin = {
       name: "git",
       description: "Quick git status for the current workspace",
       acceptsArgs: true,
-      handler: async (_args: string, context: any) => {
-        const cwd = context?.cwd || process.cwd();
+      handler: async (ctx: any) => {
+        const cwd = ctx?.cwd || process.cwd();
         if (!(await isGitRepo(cwd))) return { text: "not a git repo" };
 
         const branch = await getCurrentBranch(cwd);
