@@ -3,7 +3,8 @@ import { execFile } from "node:child_process";
 // ── validation ──────────────────────────────────────────────────────
 
 const BRANCH_RE = /^[a-zA-Z0-9._\/-]+$/;
-const SHELL_META = /[;&|`$(){}!#~<>*?\[\]\n\r\\'"]/;
+const SHELL_META = /[;&|`$()<>]/;
+const REMOTE_RE = /^[a-zA-Z0-9._-]+$/;
 const MAX_DIFF_LINES = 500;
 const MAX_LOG_ENTRIES = 200;
 
@@ -18,12 +19,27 @@ export function validateBranchName(name: string): string | null {
 
 export function validateFilePath(p: string): string | null {
   if (!p || p.length === 0) return "file path cannot be empty";
-  if (SHELL_META.test(p) && !p.includes("'") && !p.includes(" ")) {
-    // allow spaces and single quotes in paths — they get handled by execFile
-    // but block actual shell metacharacters
-  }
-  // block obvious injection attempts
   if (p.startsWith("-")) return "file path cannot start with a dash";
+  if (SHELL_META.test(p)) return "file path contains invalid characters";
+  return null;
+}
+
+export function validateRemoteName(name: string): string | null {
+  if (!name || name.length === 0) return "remote name cannot be empty";
+  if (name.startsWith("-")) return "remote name cannot start with a dash";
+  if (!REMOTE_RE.test(name)) return "remote name contains invalid characters";
+  return null;
+}
+
+export function validateLogFilter(value: string, label: string): string | null {
+  if (value.startsWith("-")) return `${label} cannot start with a dash`;
+  if (/[\n\r]/.test(value)) return `${label} cannot contain newlines`;
+  return null;
+}
+
+export function validateLabel(label: string): string | null {
+  if (label.startsWith("-")) return "label cannot start with a dash";
+  if (SHELL_META.test(label)) return `label '${label}' contains invalid characters`;
   return null;
 }
 

@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { resolveConfig, type GitOpsConfig } from "./config.js";
 import {
   runGit, isGitRepo, getCurrentBranch, truncateOutput, filterBinaryDiffs,
-  validateBranchName, validateFilePath, validateRef,
+  validateBranchName, validateFilePath, validateRef, validateRemoteName, validateLogFilter, validateLabel,
   MAX_DIFF_LINES, MAX_LOG_ENTRIES,
 } from "./git.js";
 
@@ -168,9 +168,21 @@ const plugin = {
             if (v) return err(v);
             args.push(params.ref as string);
           }
-          if (params.author) args.push(`--author=${params.author as string}`);
-          if (params.since) args.push(`--since=${params.since as string}`);
-          if (params.grep) args.push(`--grep=${params.grep as string}`);
+          if (params.author) {
+            const v = validateLogFilter(params.author as string, "author");
+            if (v) return err(v);
+            args.push(`--author=${params.author as string}`);
+          }
+          if (params.since) {
+            const v = validateLogFilter(params.since as string, "since");
+            if (v) return err(v);
+            args.push(`--since=${params.since as string}`);
+          }
+          if (params.grep) {
+            const v = validateLogFilter(params.grep as string, "grep");
+            if (v) return err(v);
+            args.push(`--grep=${params.grep as string}`);
+          }
 
           const paths = params.paths as string[] | undefined;
           if (paths && paths.length > 0) {
@@ -340,6 +352,8 @@ const plugin = {
           try { await requireRepo(cwd); } catch (e: any) { return err(e.message); }
 
           const remote = (params.remote as string) ?? cfg.defaultRemote;
+          const remoteErr = validateRemoteName(remote);
+          if (remoteErr) return err(remoteErr);
           const branch = (params.branch as string) ?? (await getCurrentBranch(cwd));
           const force = Boolean(params.force);
 
@@ -388,7 +402,11 @@ const plugin = {
 
           const args = ["pull"];
           if (params.rebase) args.push("--rebase");
-          if (params.remote) args.push(params.remote as string);
+          if (params.remote) {
+            const remoteErr = validateRemoteName(params.remote as string);
+            if (remoteErr) return err(remoteErr);
+            args.push(params.remote as string);
+          }
           if (params.branch) {
             const v = validateRef(params.branch as string);
             if (v) return err(v);
@@ -530,8 +548,20 @@ const plugin = {
           });
           if (!ghCheck) return err("gh CLI is not installed. install it from https://cli.github.com/ to create PRs.");
 
-          // write body to temp file to avoid injection
+          // validate title
           const title = params.title as string;
+          if (title.startsWith("-")) return err("PR title cannot start with a dash");
+
+          // validate labels
+          const labels = params.labels as string[] | undefined;
+          if (labels && labels.length > 0) {
+            for (const l of labels) {
+              const lv = validateLabel(l);
+              if (lv) return err(lv);
+            }
+          }
+
+          // write body to temp file to avoid injection
           const body = (params.body as string) ?? "";
 
           const bodyFile = join(tmpdir(), `openclaw-pr-body-${randomUUID()}.md`);
@@ -544,7 +574,6 @@ const plugin = {
               args.push("--base", params.base as string);
             }
             if (params.draft) args.push("--draft");
-            const labels = params.labels as string[] | undefined;
             if (labels && labels.length > 0) {
               args.push("--label", labels.join(","));
             }
