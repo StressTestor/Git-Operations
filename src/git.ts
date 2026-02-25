@@ -12,8 +12,9 @@ export function validateBranchName(name: string): string | null {
   if (!name || name.length === 0) return "branch name cannot be empty";
   if (name.startsWith("-")) return "branch name cannot start with a dash (looks like a flag)";
   if (name.startsWith(".") || name.endsWith(".") || name.endsWith(".lock")) return "invalid branch name";
-  if (name.includes("..") || name.includes("@{") || name.includes("~") || name.includes("^") || name.includes(" ")) return "branch name contains invalid characters";
+  if (name.includes("@{") || name.includes("~") || name.includes("^") || name.includes(" ")) return "branch name contains invalid characters";
   if (!BRANCH_RE.test(name)) return "branch name contains invalid characters — only a-z, 0-9, '.', '_', '/', '-' allowed";
+  if (name.includes("..")) return "branch name cannot contain '..' (path traversal)";
   return null;
 }
 

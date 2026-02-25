@@ -4,6 +4,7 @@ import { writeFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
+import { execFile as nodeExecFile } from "node:child_process";
 import { resolveConfig, type GitOpsConfig } from "./config.js";
 import {
   runGit, isGitRepo, getCurrentBranch, truncateOutput, filterBinaryDiffs,
@@ -457,7 +458,11 @@ const plugin = {
 
           if (action === "push") {
             const args = ["stash", "push"];
-            if (params.message) args.push("-m", params.message as string);
+            if (params.message) {
+              const msg = params.message as string;
+              if (msg.startsWith("-")) return err("stash message cannot start with a dash (looks like a flag)");
+              args.push("-m", msg);
+            }
             const result = await runGit(args, cwd);
             if (result.exitCode !== 0) return err(result.stderr);
             return text(result.stdout || "stashed");
@@ -545,8 +550,7 @@ const plugin = {
 
           // check gh is available
           const ghCheck = await new Promise<boolean>((resolve) => {
-            const { execFile: ef } = require("node:child_process");
-            ef("gh", ["--version"], { timeout: 5000 }, (err: any) => resolve(!err));
+            nodeExecFile("gh", ["--version"], { timeout: 5000 }, (err: any) => resolve(!err));
           });
           if (!ghCheck) return err("gh CLI is not installed. install it from https://cli.github.com/ to create PRs.");
 
@@ -581,9 +585,8 @@ const plugin = {
             }
 
             // gh is not git, so we use execFile directly
-            const { execFile: ef } = require("node:child_process");
             const result = await new Promise<GitResult>((resolve) => {
-              ef("gh", args, { cwd, timeout: 30_000 }, (err: any, stdout: string, stderr: string) => {
+              nodeExecFile("gh", args, { cwd, timeout: 30_000 }, (err: any, stdout: string, stderr: string) => {
                 const exitCode = err && "code" in err ? err.code as number : err ? 1 : 0;
                 resolve({ stdout: stdout ?? "", stderr: stderr ?? "", exitCode });
               });
